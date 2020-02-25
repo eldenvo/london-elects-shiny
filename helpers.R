@@ -2,6 +2,7 @@ library(tidyverse)
 library(themedenv)
 library(scales)
 library(RColorBrewer)
+library(here)
 
 party_radio_colours <- list(HTML("<p style='color:#d50000;'>Labour</p>"),
                             HTML("<p style='color:#0087DC;'>Conservative</p>"),
@@ -9,12 +10,15 @@ party_radio_colours <- list(HTML("<p style='color:#d50000;'>Labour</p>"),
 
 party_radio_choices <- c("Lab", "Con", "LD")
 
+party_names <- c("Labour", "Conservative", "Liberal Democrat", "Green", "Other")
+
+csv <- read_csv(here::here("data", "London_Assembly_Constituencies_December_2019_Names_and_Codes_in_England.csv")) %>%
+  mutate(winner_16 = c("Lab", "Con", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Con"))
+
 
 run_assembly_election <- function(lab.seats,
                                   con.seats,
                                   lib.seats = 0,
-                                  grn.seats = 0,
-                                  brx.seats = 0,
                                   lab.pct,
                                   con.pct,
                                   lib.pct,
@@ -22,17 +26,17 @@ run_assembly_election <- function(lab.seats,
                                   brx.pct){
   
   schedule <- tibble(
-    party = c("lab", "con", "lib dem", "green", "brexit"),
-    constituency_seats = c(lab.seats, con.seats, lib.seats, grn.seats, brx.seats),
-    votes = c(lab.pct, con.pct, lib.pct, grn.pct, brx.pct),
+    party = party_names,
+    constituency_seats = c(lab.seats, con.seats, lib.seats, 0, 0),
+    votes = c(lab.pct - 0.00000001, con.pct + 0.0000001, lib.pct + 0.000000011, grn.pct - 0.00000000101, brx.pct + 0.0000001009),  ### modifications to avoid equal numbers
     quota = constituency_seats + 1,
     seats_won = 0
-  )
+  ) 
   
   outputs <- tibble(round = c(1:11),
                     frame = list(schedule))
   
-  for (i in c(2:11)){
+  for (i in c(2:12)){
     
     tt <- outputs %>%
       slice(i - 1) %>%

@@ -24,33 +24,33 @@ ui <- fluidPage(
         ## first column - assembly constituency radio butto
         column(4,
                h4("Assembly Constituency Winners"),
-               radioButtons("radio", label = "Barnet and Camden",
+               radioButtons(csv$LAC19CD[1], label = "Barnet and Camden",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Bexley and Bromley",
+               radioButtons(csv$LAC19CD[2], label = "Bexley and Bromley",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con"),
-               radioButtons("radio", label = "Brent and Harrow",
+               radioButtons(csv$LAC19CD[3], label = "Brent and Harrow",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "City and East",
+               radioButtons(csv$LAC19CD[4], label = "City and East",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Croydon and Sutton",
+               radioButtons(csv$LAC19CD[5], label = "Croydon and Sutton",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con"),
-               radioButtons("radio", label = "Ealing and Hillingdon",
+               radioButtons(csv$LAC19CD[6], label = "Ealing and Hillingdon",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Enfield and Haringey",
+               radioButtons(csv$LAC19CD[7], label = "Enfield and Haringey",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Greenwich and Lewisham",
+               radioButtons(csv$LAC19CD[8], label = "Greenwich and Lewisham",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Havering and Redbridge",
+               radioButtons(csv$LAC19CD[9], label = "Havering and Redbridge",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con"),
-               radioButtons("radio", label = "Lambeth and Southwark",
+               radioButtons(csv$LAC19CD[10], label = "Lambeth and Southwark",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "Merton and Wandsworth",
+               radioButtons(csv$LAC19CD[11], label = "Merton and Wandsworth",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "North East",
+               radioButtons(csv$LAC19CD[12], label = "North East",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"),
-               radioButtons("radio", label = "South West",
+               radioButtons(csv$LAC19CD[13], label = "South West",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con"),
-               radioButtons("radio", label = "West Central",
+               radioButtons(csv$LAC19CD[14], label = "West Central",
                             inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con")
                
                ),
@@ -86,22 +86,51 @@ ui <- fluidPage(
         ),
 
         # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("resultsPlot")
+        column(4, offset = 0,
+               h4("Outcome"),
+            plotOutput('plot')
         )
     )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+    
+    result <- reactive({
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+        radio_ins <- reactiveValuesToList(input)
+        
+        constituency_winners <- tibble(code = names(radio_ins),
+                                       seat_winner = unlist(radio_ins, use.names = F)) %>%
+            filter(code %in% csv$LAC19CD)
+        
+    
+        lab_seats <- length(constituency_winners %>% filter(seat_winner == "Lab") %>% pull(seat_winner)) 
+        con_seats <- length(constituency_winners %>% filter(seat_winner == "Con") %>% pull(seat_winner))
+        ld_seats <- length(constituency_winners %>% filter(seat_winner == "LD") %>% pull(seat_winner))
+        
+        result1 <- run_assembly_election(lab_seats, con_seats, ld_seats,
+                                        input$lab_list_pct, input$con_list_pct, input$ld_list_pct, input$grn_list_pct, input$other_list_pct)
+        
+        
+        
+        return(result1)
+        
+    })
+    
+    output$plot <- renderPlot({
+        
+        p <- result() %>%
+            mutate(overall = constituency_seats + seats_won) %>%
+            select(party, constituency = constituency_seats, list = seats_won, overall) %>%
+            pivot_longer(-1, names_to = "type", values_to = "seats") %>%
+            mutate(party = fct_relevel(party, party_names)) %>%
+            ggplot(aes(x = party, y = seats, fill = party)) +
+            geom_col() +
+            scale_y_continuous(breaks = 0:14) +
+            facet_wrap(~type, ncol = 1)
+        
+        print(p)
     })
 }
 
