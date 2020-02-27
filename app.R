@@ -94,6 +94,10 @@ ui <- fluidPage(
             ### adding potential warning text below middle column
             
             textOutput("sum_text"),
+            br(),
+            actionButton("set_2016", "2016 Results"),
+            actionButton("set_2018", "2018 Local elections translated"),
+            actionButton("set_2019", "2019 European elections translated")
         ),
 
         # Show a plot of the generated election outcome
@@ -109,7 +113,7 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
     
     ## use the inputs to run the election, based on function defined in 'helpers.r'
         result <- reactive({
@@ -187,11 +191,10 @@ server <- function(input, output) {
         
         map <- shapefile %>%
             left_join(constituencies(), by = c("lac18cd" = "code")) %>%
-            mutate(seat_winner = fct_relevel(seat_winner, c("Lab", "Con", "LD"))) %>%
             ggplot() +
             geom_sf(aes(fill = seat_winner), show.legend = F, size = 0.5, color = "black") +
             theme_void() +
-            scale_fill_manual(values = c(Lab = "#d50000", Con = "#0087DC", LD = "#FAA61A")) +
+            scale_fill_manual(values = c(Lab = "#d50000", Con = "#0087DC", LD = "#FAA61A", Oth = "#70147A")) +
             labs(subtitle = "") +
             theme_denv(background.color = "transparent") +
             theme(axis.text = element_blank(),
@@ -208,6 +211,72 @@ server <- function(input, output) {
         else{
                                 paste0("The list adds up to ", sum_list(), "%")
         }
+    })
+    
+    observeEvent(input$set_2016, {
+        updateRadioButtons(session, csv$LAC19CD[1], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[2], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[3], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[4], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[5], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[6], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[7], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[8], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[9], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[10], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[11], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[12], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[13], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[14], selected = "Con")
+        updateNumericInput(session, "lab_list_pct", value = 40.3)
+        updateNumericInput(session, "con_list_pct", value = 29.2)
+        updateNumericInput(session, "ld_list_pct", value = 6.3)
+        updateNumericInput(session, "grn_list_pct", value = 8.0)
+        updateNumericInput(session, "other_list_pct", value = 6.5)
+    })
+    
+    observeEvent(input$set_2018, {
+        updateRadioButtons(session, csv$LAC19CD[1], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[2], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[3], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[4], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[5], selected = "Con")
+        updateRadioButtons(session, csv$LAC19CD[6], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[7], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[8], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[9], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[10], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[11], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[12], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[13], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[14], selected = "Lab")
+        updateNumericInput(session, "lab_list_pct", value = 47.0)
+        updateNumericInput(session, "con_list_pct", value = 30.8)
+        updateNumericInput(session, "ld_list_pct", value = 12.7)
+        updateNumericInput(session, "grn_list_pct", value = 5.9)
+        updateNumericInput(session, "other_list_pct", value = 0.5)
+    })
+    
+    observeEvent(input$set_2019, {
+        updateRadioButtons(session, csv$LAC19CD[1], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[2], selected = "Oth")
+        updateRadioButtons(session, csv$LAC19CD[3], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[4], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[5], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[6], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[7], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[8], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[9], selected = "Oth")
+        updateRadioButtons(session, csv$LAC19CD[10], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[11], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[12], selected = "Lab")
+        updateRadioButtons(session, csv$LAC19CD[13], selected = "LD")
+        updateRadioButtons(session, csv$LAC19CD[14], selected = "LD")
+        updateNumericInput(session, "lab_list_pct", value = 23.8)
+        updateNumericInput(session, "con_list_pct", value = 7.9)
+        updateNumericInput(session, "ld_list_pct", value = 26.9)
+        updateNumericInput(session, "grn_list_pct", value = 12.3)
+        updateNumericInput(session, "other_list_pct", value = 17.7)
     })
 }
 

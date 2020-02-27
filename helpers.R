@@ -6,15 +6,39 @@ library(here)
 
 party_radio_colours <- list(HTML("<p style='color:#d50000;'>Labour</p>"),
                             HTML("<p style='color:#0087DC;'>Conservative</p>"),
-                            HTML("<p style='color:#FAA61A;'>Lib Dem</p>"))
+                            HTML("<p style='color:#FAA61A;'>Lib Dem</p>"),
+                            HTML("<p style='color:#70147A;'>Other</p>"))
 
-party_radio_choices <- c("Lab", "Con", "LD")
+party_radio_choices <- c("Lab", "Con", "LD", "Oth")
 
 party_names <- c("Labour", "Conservative", "Liberal Democrat", "Green", "Other")
 party_colours <- c("#d50000", "#0087DC", "#FAA61A", "#6AB023", "#70147A")
 
 csv <- read_csv(here::here("data", "London_Assembly_Constituencies_December_2019_Names_and_Codes_in_England.csv")) %>%
   mutate(winner_16 = c("Lab", "Con", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Con"))
+
+cand <- read_csv(here::here("data", "candidate-results.csv"))
+
+
+cand %>%
+  group_by(party) %>%
+  summarise(xx = sum(number_votes, na.rm = T),
+            n = n()) %>%
+  ungroup() %>%
+  arrange(-xx) %>%
+  mutate(pct = (xx/sum(xx))*100)
+
+cand %>%
+  group_by(borough_name, party) %>%
+  summarise(xx = sum(number_votes, na.rm = T), n = n()) %>%
+  ungroup() %>%
+  filter(party %in% c("LAB", "CON", "LD", "GRE", "UKIP")) %>%
+  ungroup() %>%
+  filter(borough_name %in% c("Westminster", "Hammersmith and Fulham", "Kensington and Chelsea")) %>%
+  group_by(party) %>%
+  summarise(res = sum(xx)/sum(n)) %>%
+  ungroup() %>%
+  filter(res == max(res))
 
 
 shapefile <- st_read(here("data/London_Assembly_Constituencies_December_2018_Boundaries_EN_BFC", 
