@@ -127,7 +127,7 @@ server <- function(input, output) {
         result1 <- run_assembly_election(lab_seats, con_seats, ld_seats,
                                         input$lab_list_pct, input$con_list_pct, input$ld_list_pct, input$grn_list_pct, input$other_list_pct)
         
-        return(result)
+        return(result1)
         
     })
     
@@ -187,7 +187,7 @@ server <- function(input, output) {
         
         map <- shapefile %>%
             left_join(constituencies(), by = c("lac18cd" = "code")) %>%
-            mutate(seat_winner = fct_relevel(seat_winner, party_names[1:3])) %>%
+            mutate(seat_winner = fct_relevel(seat_winner, c("Lab", "Con", "LD"))) %>%
             ggplot() +
             geom_sf(aes(fill = seat_winner), show.legend = F, size = 0.5, color = "black") +
             theme_void() +
