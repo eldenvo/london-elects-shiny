@@ -9,9 +9,10 @@
 
 library(shiny)
 library(tidyverse)
-#library(themedenv)
+library(themedenv)
 library(scales)
-library(RColorBrewer)
+library(sf)
+library(here)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -58,37 +59,51 @@ ui <- fluidPage(
         
         column(4, offset = 0,
                h4("Assembly List Party share of vote"),
-            sliderInput("lab_list_pct",
+            numericInput("lab_list_pct",
                         p("Labour", style = "color:#d50000"),
                         min = 0,
-                        max = 60,
-                        value = 40),
-            sliderInput("con_list_pct",
+                        max = 100,
+                        value = 40.3,
+                        step = 0.1),
+            numericInput("con_list_pct",
                         p("Conservative", style = "color:#0087DC"),
                         min = 0,
-                        max = 60,
-                        value = 22),
-            sliderInput("ld_list_pct",
+                        max = 100,
+                        value = 29.2,
+                        step = 0.1),
+            numericInput("ld_list_pct",
                         p("Liberal Democrat", style = "color:#FAA61A"),
                         min = 0,
                         max = 60,
-                        value = 7),
-            sliderInput("grn_list_pct",
+                        value = 6.3,
+                        step = 0.1),
+            numericInput("grn_list_pct",
                         p("Green", style = "color:#6AB023"),
                         min = 0,
-                        max = 60,
-                        value = 6),
-            sliderInput("other_list_pct",
+                        max = 100,
+                        value = 8,
+                        step = 0.1),
+            numericInput("other_list_pct",
                         p("Other", style = "color:#70147A"),
                         min = 0,
-                        max = 60,
-                        value = 4)
+                        max = 100,
+                        value = 6.5,
+                        step = 0.1),
+            br(),
+            
+            ### adding potential warning text below middle column
+            
+            textOutput("sum_text"),
         ),
 
-        # Show a plot of the generated distribution
+        # Show a plot of the generated election outcome
         column(4, offset = 0,
                h4("Outcome"),
-            plotOutput('plot')
+            plotOutput('plot'),
+            br(),
+            
+        ## and a map of the constituencies    
+            plotOutput('map')
         )
     )
 )
@@ -96,14 +111,14 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     
-    result <- reactive({
+    ## use the inputs to run the election, based on function defined in 'helpers.r'
+        result <- reactive({
 
-        radio_ins <- reactiveValuesToList(input)
+        input_list <- reactiveValuesToList(input)
         
-        constituency_winners <- tibble(code = names(radio_ins),
-                                       seat_winner = unlist(radio_ins, use.names = F)) %>%
+        constituency_winners <- tibble(code = names(input_list),
+                                       seat_winner = unlist(input_list, use.names = F)) %>%
             filter(code %in% csv$LAC19CD)
-        
     
         lab_seats <- length(constituency_winners %>% filter(seat_winner == "Lab") %>% pull(seat_winner)) 
         con_seats <- length(constituency_winners %>% filter(seat_winner == "Con") %>% pull(seat_winner))
@@ -112,25 +127,87 @@ server <- function(input, output) {
         result1 <- run_assembly_election(lab_seats, con_seats, ld_seats,
                                         input$lab_list_pct, input$con_list_pct, input$ld_list_pct, input$grn_list_pct, input$other_list_pct)
         
-        
-        
-        return(result1)
+        return(result)
         
     })
+    
+        ## create constituency winners to use for map    
+        constituencies <- reactive({
+            
+            input_list <- reactiveValuesToList(input)
+            
+            constituency_winners <- tibble(code = names(input_list),
+                                           seat_winner = unlist(input_list, use.names = F)) %>%
+                filter(code %in% csv$LAC19CD)
+            
+      return(constituency_winners)
+            
+        })
+        
+    ## add up percentages in list vote for warning
+        
+    sum_list <- reactive({
+        
+        sum_list <- sum(input$lab_list_pct, input$con_list_pct, input$ld_list_pct, input$grn_list_pct, input$other_list_pct)
+        
+        return(sum_list)
+        
+    })
+    
+    ## col chart for number of seats won
     
     output$plot <- renderPlot({
         
         p <- result() %>%
-            mutate(overall = constituency_seats + seats_won) %>%
-            select(party, constituency = constituency_seats, list = seats_won, overall) %>%
+            mutate(Overall = constituency_seats + seats_won) %>%
+            select(party, Constituency = constituency_seats, List = seats_won, Overall) %>%
             pivot_longer(-1, names_to = "type", values_to = "seats") %>%
             mutate(party = fct_relevel(party, party_names)) %>%
             ggplot(aes(x = party, y = seats, fill = party)) +
             geom_col() +
-            scale_y_continuous(breaks = 0:14) +
-            facet_wrap(~type, ncol = 1)
+            geom_text(aes(y = 2.5, label = seats), size = 7, family = "Lato", color = "gray15") +
+            scale_y_continuous(breaks = 0:16) +
+            scale_fill_manual(values = party_colours) +
+            facet_wrap(~type, ncol = 1) +
+            labs(title = "",
+                 y = "",
+                 x = "",
+                 fill = "") +
+            guides(fill = "none") +
+            theme_denv(background.color = "white") + 
+            theme(panel.grid = element_blank(),
+                  axis.text.y = element_blank())
         
         print(p)
+    })
+    
+    ## super constituency map for seat winners
+    
+    output$map <- renderPlot({
+        
+        map <- shapefile %>%
+            left_join(constituencies(), by = c("lac18cd" = "code")) %>%
+            mutate(seat_winner = fct_relevel(seat_winner, party_names[1:3])) %>%
+            ggplot() +
+            geom_sf(aes(fill = seat_winner), show.legend = F, size = 0.5, color = "black") +
+            theme_void() +
+            scale_fill_manual(values = c(Lab = "#d50000", Con = "#0087DC", LD = "#FAA61A")) +
+            labs(subtitle = "") +
+            theme_denv(background.color = "transparent") +
+            theme(axis.text = element_blank(),
+                  panel.grid.major = element_line(colour = 'transparent'))
+            
+        print(map)
+    })
+    
+    ## warning text in case of list adding up to more than 100
+    
+    output$sum_text <- renderText({
+        if (sum_list() > 100) {
+                                "Warning: The list adds up to more than 100%. Please reduce the totals." }
+        else{
+                                paste0("The list adds up to ", sum_list(), "%")
+        }
     })
 }
 

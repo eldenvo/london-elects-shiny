@@ -11,10 +11,14 @@ party_radio_colours <- list(HTML("<p style='color:#d50000;'>Labour</p>"),
 party_radio_choices <- c("Lab", "Con", "LD")
 
 party_names <- c("Labour", "Conservative", "Liberal Democrat", "Green", "Other")
+party_colours <- c("#d50000", "#0087DC", "#FAA61A", "#6AB023", "#70147A")
 
 csv <- read_csv(here::here("data", "London_Assembly_Constituencies_December_2019_Names_and_Codes_in_England.csv")) %>%
   mutate(winner_16 = c("Lab", "Con", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Lab", "Lab", "Lab", "Con", "Con"))
 
+
+shapefile <- st_read(here("data/London_Assembly_Constituencies_December_2018_Boundaries_EN_BFC", 
+                          "London_Assembly_Constituencies_December_2018_Boundaries_EN_BFC.shp"))
 
 run_assembly_election <- function(lab.seats,
                                   con.seats,
