@@ -6,9 +6,14 @@ library(sf)
 library(here)
 library(purrr)
 library(extrafont)
+library(shinythemes)
+library(RColorBrewer)
+source("helpers.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+  
+  theme = shinytheme("yeti"),
 
   # Application title
   titlePanel("London Assembly Elections"),
@@ -18,7 +23,8 @@ ui <- fluidPage(
     ## first column - assembly constituency radio butto
     column(
       4,
-      h4("Assembly Constituency Winners"),
+      div(style = "font-size: 10px; padding: 0px 0px; margin-top:0",
+      h4("Assembly Constituency Winners", align="center"),
       radioButtons(csv$LAC19CD[1],
         label = "Barnet and Camden",
         inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Lab"
@@ -75,12 +81,12 @@ ui <- fluidPage(
         label = "West Central",
         inline = T, choiceNames = party_radio_colours, choiceValues = party_radio_choices, selected = "Con"
       )
-    ),
+    )),
     ## second panel for list share
 
     column(4,
       offset = 0,
-      h4("Assembly List Party share of vote"),
+      h4("Assembly List Party share of vote", align="center"),
       numericInput("lab_list_pct",
         p("Labour", style = "color:#d50000"),
         min = 0,
@@ -120,22 +126,22 @@ ui <- fluidPage(
 
       ### adding potential warning text below middle column
 
-      textOutput("equal_list"),
+      htmlOutput("equal_list"),
       br(),
-      textOutput("sum_text"),
+      htmlOutput("sum_text"),
       br(),
-      actionButton("set_2016", "2016 Results"),
+      actionButton("set_2016", "2016 London election results"),
       br(),
-      actionButton("set_2018", "2018 Local elections translated"),
+      actionButton("set_2018", "2018 Local election results"),
       br(),
-      actionButton("set_2019", "2019 European elections translated")
+      actionButton("set_2019", "2019 European election results")
     ),
 
     # Show a plot of the generated election outcome
     column(4,
       offset = 0,
-      h4("Outcome"),
-      plotOutput("plot"),
+      h4("Election Results" ,align="center"),
+      plotOutput("plot", height = 540),
       br(),
 
       ## and a map of the constituencies
@@ -160,9 +166,10 @@ server <- function(input, output, session) {
     lab_seats <- length(constituency_winners %>% filter(seat_winner == "Lab") %>% pull(seat_winner))
     con_seats <- length(constituency_winners %>% filter(seat_winner == "Con") %>% pull(seat_winner))
     ld_seats <- length(constituency_winners %>% filter(seat_winner == "LD") %>% pull(seat_winner))
+    oth_seats <- length(constituency_winners %>% filter(seat_winner == "Oth") %>% pull(seat_winner))
 
     result1 <- run_assembly_election(
-      lab_seats, con_seats, ld_seats,
+      lab_seats, con_seats, ld_seats, oth_seats,
       input$lab_list_pct, input$con_list_pct, input$ld_list_pct, input$grn_list_pct, input$other_list_pct
     )
 
@@ -177,7 +184,9 @@ server <- function(input, output, session) {
       code = names(input_list),
       seat_winner = unlist(input_list, use.names = F)
     ) %>%
-      filter(code %in% csv$LAC19CD)
+      filter(code %in% csv$LAC19CD) %>%
+      arrange(code) %>%
+      pull(seat_winner)
 
     return(constituency_winners)
   })
@@ -208,10 +217,10 @@ server <- function(input, output, session) {
       mutate(Overall = constituency_seats + seats_won) %>%
       select(party, Constituency = constituency_seats, List = seats_won, Overall) %>%
       pivot_longer(-1, names_to = "type", values_to = "seats") %>%
-      mutate(party = fct_relevel(party, party_names)) %>%
-      ggplot(aes(x = party, y = seats, fill = party)) +
+      mutate(party = fct_relevel(party, party_names)) %>% {
+      ggplot(., aes(x = party, y = seats, fill = party)) +
       geom_col() +
-      geom_text(aes(y = 2.5, label = seats), size = 7, family = "Lato", color = "gray15") +
+      geom_text(aes(y = case_when(.$seats > 4 ~ 2, .$seats < 5 ~ .$seats + 2), label = seats), size = 10, family = "Lato", color = "gray15") +
       scale_y_continuous(breaks = 0:16) +
       scale_fill_manual(values = party_colours) +
       facet_wrap(~type, ncol = 1) +
@@ -226,7 +235,7 @@ server <- function(input, output, session) {
       theme(
         panel.grid = element_blank(),
         axis.text.y = element_blank()
-      )
+      )}
 
     print(p)
   })
@@ -235,7 +244,8 @@ server <- function(input, output, session) {
 
   output$map <- renderPlot({
     map <- shapefile %>%
-      left_join(constituencies(), by = c("lac18cd" = "code")) %>%
+      arrange(lac18cd) %>%
+      mutate(seat_winner = constituencies()) %>%
       ggplot() +
       geom_sf(aes(fill = seat_winner), show.legend = F, size = 0.5, color = "black") +
       theme_void() +
@@ -254,7 +264,7 @@ server <- function(input, output, session) {
 
   output$sum_text <- renderText({
     if (sum_list() > 100) {
-      "Warning: The list adds up to more than 100%. Please reduce the totals."
+      paste0("<font color=\"#FF0000\"><b>","Warning: ", "</b></font>", "The list adds up to more than 100%. Please reduce the totals.")
     }
     else {
       paste0("The list adds up to ", sum_list(), "%")
@@ -268,7 +278,7 @@ server <- function(input, output, session) {
       ""
     }
     else {
-      paste0("Warning: two or more of the list percentages are the same. The result created will be wrong. Please change some of the list percentages so that none of them are equal.")
+      paste0("<font color=\"#FF0000\"><b>","Warning: ", "</b></font>", "two or more of the list percentages are the same. The result created will be wrong. Please change some of the list percentages so that none of them are equal.")
     }
   })
 
