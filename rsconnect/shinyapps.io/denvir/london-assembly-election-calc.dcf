@@ -1,0 +1,10 @@
+name: london-assembly-election-calc
+title:
+username:
+account: denvir
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1883132
+bundleId: 2840318
+url: https://denvir.shinyapps.io/london-assembly-election-calc/
+when: 1583005105.17472
