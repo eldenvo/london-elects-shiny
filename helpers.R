@@ -20,13 +20,13 @@ csv <- read_csv(here::here("data", "London_Assembly_Constituencies_December_2019
 cand <- read_csv(here::here("data", "candidate-results.csv"))
 
 
-cand %>%
-  group_by(party) %>%
-  summarise(xx = sum(number_votes, na.rm = T),
-            n = n()) %>%
-  ungroup() %>%
-  arrange(-xx) %>%
-  mutate(pct = (xx/sum(xx))*100)
+##cand %>%
+##  group_by(party) %>%
+##  summarise(xx = sum(number_votes, na.rm = T),
+##            n = n()) %>%
+##  ungroup() %>%
+##  arrange(-xx) %>%
+##  mutate(pct = (xx/sum(xx))*100)
 
 cand %>%
   group_by(borough_name, party) %>%
@@ -34,7 +34,7 @@ cand %>%
   ungroup() %>%
   filter(party %in% c("LAB", "CON", "LD", "GRE", "UKIP")) %>%
   ungroup() %>%
-  filter(borough_name %in% c("Westminster", "Hammersmith and Fulham", "Kensington and Chelsea")) %>%
+  filter(borough_name %in% c("Havering", "Redbridge")) %>%
   group_by(party) %>%
   summarise(res = sum(xx)/sum(n)) %>%
   ungroup() %>%
@@ -56,7 +56,7 @@ run_assembly_election <- function(lab.seats,
   schedule <- tibble(
     party = party_names,
     constituency_seats = c(lab.seats, con.seats, lib.seats, 0, 0),
-    votes = c(lab.pct - 0.00000001, con.pct + 0.0000001, lib.pct + 0.000000011, grn.pct - 0.00000000101, brx.pct + 0.0000001009),  ### modifications to avoid equal numbers
+    votes = c(lab.pct, con.pct, lib.pct, grn.pct, brx.pct),  ### modifications to avoid equal numbers
     quota = constituency_seats + 1,
     seats_won = 0
   ) 
