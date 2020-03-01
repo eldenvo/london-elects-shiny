@@ -130,6 +130,7 @@ ui <- fluidPage(
       br(),
       htmlOutput("sum_text"),
       br(),
+      h4("Click for previous results:"),
       actionButton("set_2016", "2016 London election results"),
       br(),
       actionButton("set_2018", "2018 Local election results"),

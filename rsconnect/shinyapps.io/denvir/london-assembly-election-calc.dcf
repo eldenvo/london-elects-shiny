@@ -5,6 +5,6 @@ account: denvir
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1883132
-bundleId: 2840318
+bundleId: 2841835
 url: https://denvir.shinyapps.io/london-assembly-election-calc/
-when: 1583005105.17472
+when: 1583085716.85674
